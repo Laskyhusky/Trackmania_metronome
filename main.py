@@ -121,7 +121,7 @@ class App(tk.Tk):
         try:
             state = XInput.get_state(0)
             buttons = XInput.get_button_values(state)
-            r1 = buttons["RIGHT_SHOULDER"]
+            r1 = buttons[2]
 
             # Only trigger once when R1 is initially pressed
             if r1 and not self.r1_pressed:
