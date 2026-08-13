@@ -1,74 +1,148 @@
-import datetime as date
 import tkinter as tk
-import json
-import time
 from playsound3 import playsound
+import XInput
 
 
-
-## Class to create the Skeleton of the App with all page switches
 class App(tk.Tk):
+
     def __init__(self):
         super().__init__()
-        ## Setting display ratio of the App
+        # Tkinter window
         self.geometry("300x500")
-        ## Name of the App
-        self.title("Launchpage")
+        self.title("Trackmania Metronome")
 
-        self.play_button = tk.Button(self.master, text="Play", command=self.play_sound)
-        self.play_button.pack()
+        # Audios
+        self.bpm_100 = "./assets/100_bpm.mp3"
+        self.bpm_120 = "./assets/120_bpm.mp3"
+        # Audio list
+        self.all_tracks = [
+            self.bpm_100,
+            self.bpm_120
+        ]
+        # Global for keeping track of which index is selected for the track
+        self.selected_track_index = 0
+        # Global for the actual track being selected
+        self.selected_track = self.all_tracks[
+            self.selected_track_index
+        ]
 
-        self.stop_button = tk.Button(self.master, text="Stop", command=self.stop_sound)
-        self.stop_button.pack()
+        self.sound = None
+        self.running = False
 
-        self.bpm_up_button = tk.Button(self.master, text="BPM up", command=self.bpm_up)
-        self.bpm_up_button.pack()
+        # Controller button state
+        self.r1_pressed = False
 
-        self.bpm_down_button = tk.Button(self.master, text="BPM down", command=self.bpm_down)
-        self.bpm_down_button.pack()
+        # GUI
+        # Play button
+        tk.Button(
+            self,
+            text="Play",
+            command=self.play_sound
+        ).pack(pady=5)
 
-        self.reset_button = tk.Button(self.master, text="Reset", command=self.reset)
-        self.reset_button.pack()
+        # Stop button
+        tk.Button(
+            self,
+            text="Stop",
+            command=self.stop_sound
+        ).pack(pady=5)
 
-        self.sound_playing = False
-        self.tick_rate = 1
-        self.last_tick = time.perf_counter()
+        # 100 bpm button
+        tk.Button(
+            self,
+            text="100 BPM",
+            command=self.q_100_bpm
+        ).pack(pady=5)
+
+        # 120 bpm button
+        tk.Button(
+            self,
+            text="120 BPM",
+            command=self.q_120_bpm
+        ).pack(pady=5)
+
+        # Reset button
+        tk.Button(
+            self,
+            text="Reset",
+            command=self.reset
+        ).pack(pady=5)
+
+        # Start controller polling
+        self.check_controller()
+
+        self.protocol(
+            "WM_DELETE_WINDOW",
+            self.close
+        )
 
 
-
+# Function to play the audio
     def play_sound(self):
-        if not self.sound_playing:
-            self.sound_playing = True
-            self.last_tick = time.perf_counter()
-            self.give_tick()
+        if self.sound:
+            self.sound.stop()
+        self.sound = playsound(
+            self.selected_track,
+            block=False
+        )
+        self.running = True
 
-
+# Function to stop the audio
     def stop_sound(self):
-        self.sound_playing = False
+        self.running = False
+        if self.sound:
+            self.sound.stop()
+            self.sound = None
 
+# Function to change the track to 100 bpm
+    def q_100_bpm(self):
+        self.selected_track_index = 0
+        self.selected_track = self.all_tracks[0]
 
-    def give_tick(self):
-        if self.sound_playing:
-            current_time = time.perf_counter()
-
-            if current_time - self.last_tick >= self.tick_rate:
-                print(current_time - self.last_tick)
-                playsound("assets/ticksound.mp3", block=False)
-                self.last_tick = current_time
-
-            self.after(1, self.give_tick)
-
-    def bpm_up(self):
-        if self.tick_rate < 0.3:
-            pass
-        else:
-            self.tick_rate -= 0.1
-
-    def bpm_down(self):
-        self.tick_rate += 0.1
-
-    def reset(self):
         self.play_sound()
+
+# Function to change the track to 120 bpm
+    def q_120_bpm(self):
+        self.selected_track_index = 1
+        self.selected_track = self.all_tracks[1]
+
+        self.play_sound()
+
+# Function to reset the audio
+    def reset(self):
+        self.stop_sound()
+        self.play_sound()
+
+# Function to check for controller input
+    def check_controller(self):
+
+        try:
+            state = XInput.get_state(0)
+            buttons = XInput.get_button_values(state)
+            r1 = buttons["RIGHT_SHOULDER"]
+
+            # Only trigger once when R1 is initially pressed
+            if r1 and not self.r1_pressed:
+                self.reset()
+
+            # Remember current state
+            self.r1_pressed = r1
+
+        except Exception as e:
+            pass
+
+        # Check again in 10 ms
+        self.after(
+            10,
+            self.check_controller
+        )
+
+# Function to close the app
+    def close(self):
+        if self.sound:
+            self.sound.stop()
+
+        self.destroy()
 
 
 if __name__ == "__main__":
