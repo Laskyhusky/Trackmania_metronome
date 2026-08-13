@@ -2,6 +2,8 @@ import tkinter as tk
 from playsound3 import playsound
 import XInput
 
+import os
+import sys
 
 class App(tk.Tk):
 
@@ -12,8 +14,8 @@ class App(tk.Tk):
         self.title("Trackmania Metronome")
 
         # Audios
-        self.bpm_100 = "./assets/100_bpm.mp3"
-        self.bpm_120 = "./assets/120_bpm.mp3"
+        self.bpm_100 = resource_path("assets/100_bpm.mp3")
+        self.bpm_120 = resource_path("assets/120_bpm.mp3")
         # Audio list
         self.all_tracks = [
             self.bpm_100,
@@ -144,6 +146,14 @@ class App(tk.Tk):
 
         self.destroy()
 
+# Function for the relative paths of the audio files       
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 if __name__ == "__main__":
     app = App()
